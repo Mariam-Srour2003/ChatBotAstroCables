@@ -1,0 +1,115 @@
+C:\Users\user\Desktop\ChatBotAstro0\venv\Lib\site-packages\langgraph\checkpoint\serde\encrypted.py:5: LangChainPendingDeprecationWarning: The default value of `allowed_objects` will change in a future version. Pass an explicit value (e.g., allowed_objects='messages' or allowed_objects='core') to suppress this warning.
+  from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Device : CPU
+LLM    : GROQ (model=llama-3.3-70b-versatile)
+Loading embeddings...
+Loading weights:   0%|          | 0/103 [00:00<?, ?it/s]Loading weights: 100%|##########| 103/103 [00:00<00:00, 10359.53it/s]
+INFO:     Started server process [52592]
+INFO:     Waiting for application startup.
+Failed to load llamamodel-mainline-cuda-avxonly.dll: LoadLibraryExW failed with error 0x7e
+Failed to load llamamodel-mainline-cuda.dll: LoadLibraryExW failed with error 0x7e
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+Loading vectorstore...
+Groq ready (main=llama-3.3-70b-versatile, rewrite=llama-3.1-8b-instant).
+[local] Pre-loading GPT4All in background for fallback...
+All components ready.
+
+[local] GPT4All ready.
+INFO:     127.0.0.1:59827 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59828 - "POST /chat/stream HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59829 - "POST /chat/stream HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51496 - "POST /chat/stream HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51497 - "POST /chat/stream HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51498 - "POST /session/email-test-2/email HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57267 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57267 - "POST /chat/stream HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50637 - "POST /chat/stream HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57666 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56170 - "POST /chat/stream HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50637 - "POST /session/5b85a2a2-1561-449e-8241-4cb21d1c7a1e/email HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65465 - "PATCH /session/5b85a2a2-1561-449e-8241-4cb21d1c7a1e/contact HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:62089 - "POST /chat/stream HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53322 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54608 - "POST /session/5b85a2a2-1561-449e-8241-4cb21d1c7a1e/email HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63996 - "POST /chat/stream HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58264 - "PATCH /session/5b85a2a2-1561-449e-8241-4cb21d1c7a1e/contact HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49968 - "POST /chat/stream HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52428 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49712 - "POST /session/5b85a2a2-1561-449e-8241-4cb21d1c7a1e/email HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49712 - "POST /chat/stream HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58461 - "PATCH /session/5b85a2a2-1561-449e-8241-4cb21d1c7a1e/contact HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:58461 - "POST /chat/stream HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63791 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60715 - "POST /session/5b85a2a2-1561-449e-8241-4cb21d1c7a1e/email HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58685 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58685 - "POST /chat/stream HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49955 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50904 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50904 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50904 - "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50904 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50904 - "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50904 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50019 - "POST /session/5b85a2a2-1561-449e-8241-4cb21d1c7a1e/email HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:60278 - "POST /chat/stream HTTP/1.1" 200 OK
+[fallback] Groq ReadError during stream — using local model.
+[email] Auto-sent transcript for session 5b85a2a2…
+INFO:     127.0.0.1:55589 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60801 - "POST /session/5b85a2a2-1561-449e-8241-4cb21d1c7a1e/email HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60801 - "POST /chat/stream HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61361 - "PATCH /session/5b85a2a2-1561-449e-8241-4cb21d1c7a1e/contact HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:61361 - "POST /chat/stream HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60146 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64810 - "POST /session/5b85a2a2-1561-449e-8241-4cb21d1c7a1e/email HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59998 - "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59998 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59998 - "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59998 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:63600 - "POST /chat/stream HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58496 - "PATCH /session/5b85a2a2-1561-449e-8241-4cb21d1c7a1e/contact HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:58496 - "POST /chat/stream HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58496 - "POST /chat/stream HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63293 - "POST /session/5b85a2a2-1561-449e-8241-4cb21d1c7a1e/email HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50902 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52970 - "POST /chat/stream HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56855 - "PATCH /session/5b85a2a2-1561-449e-8241-4cb21d1c7a1e/contact HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49155 - "POST /chat/stream HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63003 - "POST /chat/stream HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53743 - "POST /session/5b85a2a2-1561-449e-8241-4cb21d1c7a1e/email HTTP/1.1" 200 OK
+WARNING:  Invalid HTTP request received.
+WARNING:  Invalid HTTP request received.
+WARNING:  Invalid HTTP request received.
+WARNING:  Invalid HTTP request received.
+WARNING:  Invalid HTTP request received.
+WARNING:  Invalid HTTP request received.
+INFO:     127.0.0.1:63132 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52821 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52821 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:61094 - "POST /chat/stream HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54089 - "PATCH /session/b0ef2983-9a08-4f97-ae17-2fa28730e7db/contact HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:54089 - "POST /chat/stream HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50910 - "POST /chat/stream HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50401 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50401 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:58378 - "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:51105 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51105 - "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52726 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:54856 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54856 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:54856 - "POST /chat/stream HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58365 - "PATCH /session/bc8e9810-ac07-4049-85b8-29893ee0c66c/contact HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:58365 - "POST /chat/stream HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61121 - "POST /chat/stream HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52946 - "POST /session/bc8e9810-ac07-4049-85b8-29893ee0c66c/email?name=Mariam+Srour&email=bayyanat%40smhf.com&phone=81829415 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60947 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60546 - "POST /chat/stream HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61257 - "PATCH /session/bc8e9810-ac07-4049-85b8-29893ee0c66c/contact HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:61257 - "POST /chat/stream HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61257 - "POST /session/bc8e9810-ac07-4049-85b8-29893ee0c66c/email?name=Mariam+Srour&email=bayyanat%40smhf.com&phone=81829415 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52141 - "POST /chat/stream HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50718 - "PATCH /session/debug-test-123/contact HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:53949 - "POST /session/debug-test-123/email?name=Sales+Test&email=test%40example.com&phone=%2B961+70+999+888 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53952 - "GET /openapi.json HTTP/1.1" 200 OK

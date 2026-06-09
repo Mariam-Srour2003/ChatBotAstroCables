@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Astro Power Cables</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #e8eef7 0%, #f5f7fb 60%, #eef2f8 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #1a1a2e;
+    }
+
+    /* ── Page background ── */
+    .page { text-align: center; padding: 2rem; user-select: none; }
+    .page-logo {
+      font-size: 3.2rem; margin-bottom: 0.5rem;
+      filter: drop-shadow(0 2px 10px rgba(27,58,107,0.18));
+    }
+    .page-title {
+      font-size: 2.1rem; font-weight: 800;
+      background: linear-gradient(135deg, #1B3A6B 30%, #2563EB 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text; margin-bottom: 0.4rem;
+    }
+    .page-sub { color: #64748b; font-size: 1rem; margin-bottom: 2rem; }
+    .page-hint {
+      display: inline-flex; align-items: center; gap: 8px;
+      color: #94a3b8; font-size: 0.85rem;
+      animation: hintPulse 2.5s ease-in-out infinite;
+    }
+    @keyframes hintPulse {
+      0%, 100% { opacity: 0.5; transform: translateY(0); }
+      50%       { opacity: 1;   transform: translateY(-3px); }
+    }
+
+    /* ════════════════════════════════════════
+       CHAT WIDGET
+    ════════════════════════════════════════ */
+    #cw {
+      position: fixed; bottom: 24px; right: 24px;
+      z-index: 1000;
+      display: flex; flex-direction: column; align-items: flex-end;
+    }
+
+    /* ── Dialog box ── */
+    #cw-dialog {
+      width: 380px; height: 580px;
+      background: #ffffff; border-radius: 22px;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.16), 0 4px 16px rgba(0,0,0,0.08);
+      display: flex; flex-direction: column; overflow: hidden;
+      margin-bottom: 14px;
+      transform: scale(0.85) translateY(16px);
+      opacity: 0; pointer-events: none;
+      transform-origin: bottom right;
+      transition: transform 0.28s cubic-bezier(0.34,1.56,0.64,1), opacity 0.22s ease;
+    }
+    #cw-dialog.open {
+      transform: scale(1) translateY(0);
+      opacity: 1; pointer-events: all;
+    }
+
+    /* ── Header ── */
+    #cw-header {
+      background: linear-gradient(135deg, #1B3A6B 0%, #1e52b0 100%);
+      padding: 14px 18px;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-shrink: 0;
+    }
+    #hd-left { display: flex; align-items: center; gap: 11px; }
+    #hd-avatar {
+      width: 42px; height: 42px; border-radius: 50%;
+      background: rgba(255,255,255,0.18);
+      border: 2px solid rgba(255,255,255,0.35);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; font-weight: 800; color: white; flex-shrink: 0;
+    }
+    #hd-name  { color: white; font-size: 14px; font-weight: 700; letter-spacing: 0.01em; }
+    #hd-status {
+      color: rgba(255,255,255,0.75); font-size: 11.5px;
+      display: flex; align-items: center; gap: 5px; margin-top: 2px;
+    }
+    .sdot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: #4ade80;
+      box-shadow: 0 0 0 2px rgba(74,222,128,0.3);
+      animation: pulse-dot 2s infinite;
+    }
+    @keyframes pulse-dot {
+      0%,100% { box-shadow: 0 0 0 2px rgba(74,222,128,0.3); }
+      50%      { box-shadow: 0 0 0 5px rgba(74,222,128,0.12); }
+    }
+    #cw-close, #cw-email-btn {
+      background: rgba(255,255,255,0.14); border: none; color: white;
+      width: 32px; height: 32px; border-radius: 50%;
+      cursor: pointer; font-size: 15px;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.18s;
+      flex-shrink: 0;
+    }
+    #cw-close:hover, #cw-email-btn:hover { background: rgba(255,255,255,0.28); }
+    #cw-email-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ── Toast notification ── */
+    #cw-toast {
+      position: fixed; bottom: 100px; right: 28px;
+      background: #1e293b; color: #ffffff;
+      padding: 10px 18px; border-radius: 10px;
+      font-size: 13px; font-weight: 500;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.22);
+      z-index: 2000;
+      opacity: 0; transform: translateY(8px);
+      transition: opacity 0.25s ease, transform 0.25s ease;
+      pointer-events: none;
+      max-width: 280px;
+    }
+    #cw-toast.show {
+      opacity: 1; transform: translateY(0);
+    }
+    #cw-toast.success { background: #166534; }
+    #cw-toast.error   { background: #991b1b; }
+
+    /* ── Messages area ── */
+    #cw-msgs {
+      flex: 1; overflow-y: auto;
+      padding: 16px 14px 8px;
+      display: flex; flex-direction: column;
+      scroll-behavior: smooth;
+    }
+    #cw-msgs::-webkit-scrollbar { width: 3px; }
+    #cw-msgs::-webkit-scrollbar-thumb { background: #dde3ec; border-radius: 3px; }
+
+    /* ── Bubbles ── */
+    .mrow { display: flex; margin-bottom: 10px; }
+    .mrow.user { justify-content: flex-end; }
+    .mrow.bot  { justify-content: flex-start; align-items: flex-end; gap: 7px; }
+
+    .bav {
+      width: 27px; height: 27px; border-radius: 50%;
+      background: linear-gradient(135deg, #F47920, #d95f0e);
+      color: white; font-size: 11px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; margin-bottom: 1px;
+    }
+
+    .bubble {
+      max-width: 80%; padding: 10px 14px;
+      font-size: 13.5px; line-height: 1.65;
+      word-wrap: break-word;
+    }
+    .mrow.user .bubble {
+      background: linear-gradient(135deg, #1B3A6B, #1e52b0); color: white;
+      border-radius: 18px 18px 4px 18px;
+    }
+    .mrow.bot .bubble {
+      background: #f0f2f6; color: #1a1a2e;
+      border-radius: 18px 18px 18px 4px;
+    }
+
+    /* Markdown rendering inside bot bubbles */
+    .bubble strong { font-weight: 700; }
+    .bubble em     { font-style: italic; }
+    .bubble ul, .bubble ol { padding-left: 1.3em; margin: 4px 0; }
+    .bubble li     { margin: 2px 0; }
+    .bubble p      { margin: 4px 0; }
+    .bubble p:first-child { margin-top: 0; }
+    .bubble p:last-child  { margin-bottom: 0; }
+    .bubble code {
+      background: rgba(0,0,0,0.07); border-radius: 4px;
+      padding: 1px 5px; font-size: 12px; font-family: monospace;
+    }
+    .mrow.bot .bubble.error-bub {
+      background: #fff2f2; color: #b91c1c;
+      border: 1px solid #fecaca;
+    }
+
+    /* ── Typing dots ── */
+    .typing-row { display: flex; align-items: flex-end; gap: 7px; margin-bottom: 10px; }
+    .typing-bub {
+      background: #f0f2f6; border-radius: 18px 18px 18px 4px;
+      padding: 11px 16px;
+      display: flex; gap: 5px; align-items: center;
+    }
+    .typing-bub span {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: #9ca3af; display: inline-block;
+      animation: tdot 1.3s infinite ease-in-out;
+    }
+    .typing-bub span:nth-child(2) { animation-delay: 0.16s; }
+    .typing-bub span:nth-child(3) { animation-delay: 0.32s; }
+    @keyframes tdot {
+      0%, 60%, 100% { transform: translateY(0);   opacity: 0.35; }
+      30%            { transform: translateY(-7px); opacity: 1; }
+    }
+
+    /* ── Suggestion chips ── */
+    #cw-chips {
+      padding: 0 14px 10px;
+      display: flex; flex-wrap: wrap; gap: 7px;
+    }
+    .chip {
+      background: #eef2fb; color: #1B3A6B;
+      border: 1.5px solid #c7d4ef;
+      border-radius: 20px; padding: 5px 12px;
+      font-size: 12px; font-weight: 500;
+      cursor: pointer; transition: background 0.15s, border-color 0.15s, transform 0.1s;
+      white-space: nowrap;
+    }
+    .chip:hover { background: #dce7f9; border-color: #1B3A6B; transform: translateY(-1px); }
+    .chip:active { transform: translateY(0); }
+
+    /* ── Input row ── */
+    #cw-footer {
+      padding: 10px 14px 12px;
+      border-top: 1px solid #eef0f4; background: #fff;
+      display: flex; gap: 8px; align-items: flex-end;
+      flex-shrink: 0;
+    }
+    #cw-input {
+      flex: 1;
+      border: 1.5px solid #e2e6ef; border-radius: 18px;
+      padding: 9px 14px;
+      font-size: 13.5px; outline: none;
+      background: #f8fafc; color: #1a1a2e;
+      font-family: inherit;
+      resize: none; overflow-y: hidden;
+      max-height: 110px; min-height: 38px;
+      line-height: 1.5;
+      transition: border-color 0.18s, background 0.18s;
+    }
+    #cw-input:focus { border-color: #1B3A6B; background: #fff; }
+    #cw-input::placeholder { color: #9caabb; }
+    #cw-input:disabled { opacity: 0.55; cursor: not-allowed; }
+
+    #cw-send {
+      width: 40px; height: 40px; border-radius: 50%; border: none;
+      background: linear-gradient(135deg, #F47920, #d95f0e);
+      color: white; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      box-shadow: 0 2px 8px rgba(244,121,32,0.38);
+      transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+    }
+    #cw-send:hover   { transform: scale(1.09); box-shadow: 0 4px 14px rgba(244,121,32,0.5); }
+    #cw-send:active  { transform: scale(0.94); }
+    #cw-send:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    .pw {
+      text-align: center; font-size: 10.5px;
+      color: #c0c8d8; padding: 3px 0 5px; flex-shrink: 0;
+    }
+
+    /* ── Floating toggle button ── */
+    #cw-btn {
+      width: 60px; height: 60px; border-radius: 50%; border: none;
+      background: linear-gradient(135deg, #1B3A6B, #1e52b0);
+      color: white; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 6px 24px rgba(27,58,107,0.42);
+      transition: transform 0.2s, box-shadow 0.2s;
+      position: relative;
+    }
+    #cw-btn:hover  { transform: scale(1.1); box-shadow: 0 8px 30px rgba(27,58,107,0.55); }
+    #cw-btn:active { transform: scale(0.95); }
+
+    #cw-badge {
+      position: absolute; top: -2px; right: -2px;
+      width: 20px; height: 20px;
+      background: #ef4444; color: white;
+      border-radius: 50%; border: 2.5px solid white;
+      font-size: 10px; font-weight: 700;
+      display: none; align-items: center; justify-content: center;
+    }
+
+    /* ── Timestamp ── */
+    .ts {
+      font-size: 10px; color: #aab2c0;
+      text-align: center; margin: 6px 0 4px;
+      user-select: none;
+    }
+
+    /* ── Contact info card ── */
+    .contact-card {
+      background: #f8fafc;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 0 12px 12px 12px;
+      padding: 13px 14px;
+      max-width: 100%;
+    }
+    .cc-title {
+      font-size: 13px; font-weight: 700; color: #1B3A6B; margin-bottom: 3px;
+    }
+    .cc-opt { font-size: 11px; font-weight: 400; color: #94a3b8; }
+    .cc-sub {
+      font-size: 11.5px; color: #64748b; margin-bottom: 10px; line-height: 1.5;
+    }
+    .ci-field {
+      width: 100%; padding: 7px 10px;
+      border: 1.5px solid #e2e8f0; border-radius: 8px;
+      font-size: 12.5px; margin-bottom: 6px; outline: none;
+      background: #fff; color: #1a1a2e; font-family: inherit;
+      transition: border-color 0.15s; box-sizing: border-box;
+    }
+    .ci-field:focus { border-color: #1B3A6B; }
+    .ci-field::placeholder { color: #aab2c0; }
+    .ci-actions { display: flex; gap: 8px; align-items: center; margin-top: 6px; }
+    .ci-save-btn {
+      background: linear-gradient(135deg, #1B3A6B, #1e52b0); color: white;
+      border: none; border-radius: 8px; padding: 7px 16px;
+      font-size: 12px; font-weight: 600; cursor: pointer; transition: opacity 0.15s;
+    }
+    .ci-save-btn:hover { opacity: 0.88; }
+    .ci-skip-btn {
+      background: none; border: none; color: #94a3b8;
+      font-size: 12px; cursor: pointer; padding: 7px 4px;
+    }
+    .ci-skip-btn:hover { color: #64748b; }
+    .cc-saved {
+      display: flex; align-items: center; gap: 7px;
+      font-size: 13px; color: #166534; font-weight: 500; padding: 2px 0;
+    }
+
+    /* Mobile */
+    @media (max-width: 420px) {
+      #cw-dialog { width: calc(100vw - 20px); height: calc(100dvh - 100px); border-radius: 16px; }
+      #cw { right: 10px; bottom: 10px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Background page ─────────────────────────────────────────────────── -->
+<div class="page">
+  <div class="page-logo">⚡</div>
+  <div class="page-title">Astro Power Cables</div>
+  <div class="page-sub">ISO-certified cable manufacturer · Lebanon</div>
+  <div class="page-hint">
+    <svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24">
+      <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
+    </svg>
+    Chat with our sales assistant →
+  </div>
+</div>
+
+<!-- ── Chat Widget ──────────────────────────────────────────────────────── -->
+<div id="cw">
+
+  <!-- Dialog -->
+  <div id="cw-dialog">
+
+    <!-- Header -->
+    <div id="cw-header">
+      <div id="hd-left">
+        <div id="hd-avatar">A</div>
+        <div>
+          <div id="hd-name">Astro Power Cables</div>
+          <div id="hd-status"><span class="sdot"></span> Sales Support · Online</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button id="cw-email-btn" title="Email transcript" disabled>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+               stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="4" width="20" height="16" rx="2"/>
+            <polyline points="2,4 12,13 22,4"/>
+          </svg>
+        </button>
+        <button id="cw-close" title="Close">✕</button>
+      </div>
+    </div>
+
+    <!-- Messages -->
+    <div id="cw-msgs"></div>
+
+    <!-- Suggestion chips (shown only when chat is empty) -->
+    <div id="cw-chips">
+      <div class="chip" data-q="What cables do you offer?">Cable range</div>
+      <div class="chip" data-q="What are your certifications?">Certifications</div>
+      <div class="chip" data-q="NYA cable specifications">NYA specs</div>
+      <div class="chip" data-q="Do you have solar PV cables?">Solar cables</div>
+      <div class="chip" data-q="What are your contact details?">Contact us</div>
+    </div>
+
+    <!-- Input -->
+    <div id="cw-footer">
+      <textarea id="cw-input" rows="1"
+             placeholder="Ask about our cables…" autocomplete="off"></textarea>
+      <button id="cw-send" title="Send">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none"
+             stroke="white" stroke-width="2.5"
+             stroke-linecap="round" stroke-linejoin="round">
+          <line x1="22" y1="2" x2="11" y2="13"/>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+        </svg>
+      </button>
+    </div>
+    <div class="pw">Powered by Astro AI</div>
+
+  </div><!-- /dialog -->
+
+  <!-- Floating button -->
+  <button id="cw-btn" title="Chat with us">
+    <span id="cw-icon">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="white">
+        <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
+      </svg>
+    </span>
+    <span id="cw-badge"></span>
+  </button>
+
+</div><!-- /cw -->
+
+<!-- Toast notification -->
+<div id="cw-toast"></div>
+
+<script>
+/* ════════════════════════════════════════════════════════════════
+   Astro Chat Widget — v4
+════════════════════════════════════════════════════════════════ */
+
+const dialog    = document.getElementById('cw-dialog');
+const msgs      = document.getElementById('cw-msgs');
+const input     = document.getElementById('cw-input');
+const sendBtn   = document.getElementById('cw-send');
+const badge     = document.getElementById('cw-badge');
+const cwIcon    = document.getElementById('cw-icon');
+const chips     = document.getElementById('cw-chips');
+const emailBtn  = document.getElementById('cw-email-btn');
+const toast     = document.getElementById('cw-toast');
+
+const ICON_CHAT  = `<svg width="26" height="26" viewBox="0 0 24 24" fill="white">
+  <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
+</svg>`;
+const ICON_CLOSE = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+  stroke="white" stroke-width="2.5" stroke-linecap="round">
+  <line x1="18" y1="6" x2="6" y2="18"/>
+  <line x1="6" y1="6" x2="18" y2="18"/>
+</svg>`;
+
+const SESSION_KEY = 'astro_session_id';
+
+// ── State ─────────────────────────────────────────────────────────────────
+let sessionId   = localStorage.getItem(SESSION_KEY) || null;
+let isOpen      = false;
+let isStreaming  = false;
+let typingEl    = null;
+let unreadCount = 0;
+let msgCount    = 0;   // tracks if we've sent any messages
+
+let contactInfo       = { name: '', email: '', phone: '' };
+let contactCardShown  = false;
+let firstResponseDone = false;
+
+// ── Minimal markdown → HTML (no external deps) ────────────────────────────
+function renderMarkdown(text) {
+  // Escape HTML first
+  let s = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
+  // Bold **text** and __text__
+  s = s.replace(/\*\*(.+?)\*\*/gs, '<strong>$1</strong>');
+  s = s.replace(/__(.+?)__/gs, '<strong>$1</strong>');
+
+  // Italic *text* and _text_ (not preceded by another * or _)
+  s = s.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>');
+  s = s.replace(/(?<!_)_(?!_)(.+?)(?<!_)_(?!_)/g, '<em>$1</em>');
+
+  // Inline code `code`
+  s = s.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+  // Process line-by-line for lists and paragraphs
+  const lines = s.split('\n');
+  const out   = [];
+  let inUl = false;
+
+  for (let i = 0; i < lines.length; i++) {
+    const raw = lines[i];
+    const trimmed = raw.trim();
+
+    if (/^[-*•]\s+/.test(trimmed)) {
+      if (!inUl) { out.push('<ul>'); inUl = true; }
+      out.push('<li>' + trimmed.replace(/^[-*•]\s+/, '') + '</li>');
+    } else if (/^\d+\.\s+/.test(trimmed)) {
+      if (!inUl) { out.push('<ul>'); inUl = true; }
+      out.push('<li>' + trimmed.replace(/^\d+\.\s+/, '') + '</li>');
+    } else {
+      if (inUl) { out.push('</ul>'); inUl = false; }
+      if (trimmed === '') {
+        out.push('<br>');
+      } else {
+        out.push('<p>' + raw + '</p>');
+      }
+    }
+  }
+  if (inUl) out.push('</ul>');
+
+  // Clean up excess <br> at start/end
+  let result = out.join('').replace(/(<br>){2,}/g, '<br>').replace(/^(<br>)+|(<br>)+$/g, '');
+  return result;
+}
+
+// ── UUID ──────────────────────────────────────────────────────────────────
+function mkUUID() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0;
+    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+  });
+}
+
+// ── Scroll ────────────────────────────────────────────────────────────────
+function scrollBottom() {
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+// ── Auto-grow textarea ────────────────────────────────────────────────────
+function autoGrow() {
+  input.style.height = 'auto';
+  input.style.height = Math.min(input.scrollHeight, 110) + 'px';
+}
+
+// ── Typing indicator ──────────────────────────────────────────────────────
+function showTyping() {
+  if (typingEl) return;
+  typingEl = document.createElement('div');
+  typingEl.className = 'typing-row';
+  typingEl.innerHTML =
+    '<div class="bav">A</div>' +
+    '<div class="typing-bub"><span></span><span></span><span></span></div>';
+  msgs.appendChild(typingEl);
+  scrollBottom();
+}
+function hideTyping() {
+  if (typingEl) { typingEl.remove(); typingEl = null; }
+}
+
+// ── Add messages ──────────────────────────────────────────────────────────
+function addTimestamp() {
+  const el = document.createElement('div');
+  el.className = 'ts';
+  const now = new Date();
+  el.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  msgs.appendChild(el);
+}
+
+function addUser(text) {
+  if (msgCount === 0) addTimestamp();
+  const row = document.createElement('div');
+  row.className = 'mrow user';
+  const bub = document.createElement('div');
+  bub.className = 'bubble';
+  bub.textContent = text;
+  row.appendChild(bub);
+  msgs.appendChild(row);
+  msgCount++;
+  scrollBottom();
+  hideChips();
+}
+
+function addBot(text, isError) {
+  const { row, bub } = _makeBotRow();
+  if (isError) bub.classList.add('error-bub');
+  bub.innerHTML = isError ? escapeHTML(text) : renderMarkdown(text);
+  msgs.appendChild(row);
+  scrollBottom();
+  return bub;
+}
+
+function escapeHTML(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// Creates an empty bot bubble for streaming into
+function streamBubble() {
+  const { row, bub } = _makeBotRow();
+  msgs.appendChild(row);
+  scrollBottom();
+  return bub;
+}
+
+function _makeBotRow() {
+  const row = document.createElement('div');
+  row.className = 'mrow bot';
+  const av = document.createElement('div');
+  av.className = 'bav'; av.textContent = 'A';
+  const bub = document.createElement('div');
+  bub.className = 'bubble';
+  row.appendChild(av); row.appendChild(bub);
+  return { row, bub };
+}
+
+// ── Chips ─────────────────────────────────────────────────────────────────
+function hideChips() {
+  if (chips.style.display !== 'none') chips.style.display = 'none';
+}
+
+// ── Unread badge ──────────────────────────────────────────────────────────
+function incUnread() {
+  if (isOpen) return;
+  unreadCount++;
+  badge.textContent = unreadCount > 9 ? '9+' : unreadCount;
+  badge.style.display = 'flex';
+}
+function clearUnread() {
+  unreadCount = 0;
+  badge.style.display = 'none';
+}
+
+// ── Toggle open/close ─────────────────────────────────────────────────────
+function toggle() {
+  isOpen = !isOpen;
+  if (isOpen) {
+    dialog.classList.add('open');
+    cwIcon.innerHTML = ICON_CLOSE;
+    clearUnread();
+    input.focus();
+    if (!sessionId) {
+      sessionId = mkUUID();
+      localStorage.setItem(SESSION_KEY, sessionId);
+      setTimeout(() => {
+        addBot(
+          'Welcome to **Astro Power Cables**! I\'m your dedicated sales assistant.\n\n' +
+          'I can help you with:\n' +
+          '- Cable types and technical specifications\n' +
+          '- Electrical & mechanical properties\n' +
+          '- ISO certifications and quality standards\n' +
+          '- Industries we serve and key projects\n' +
+          '- Factory capabilities and contact info\n\n' +
+          'What can I help you with today?'
+        );
+      }, 320);
+    }
+  } else {
+    dialog.classList.remove('open');
+    cwIcon.innerHTML = ICON_CHAT;
+  }
+}
+
+// ── Lock / Unlock UI during streaming ─────────────────────────────────────
+function lockUI() {
+  isStreaming = true;
+  sendBtn.disabled = true;
+  input.disabled   = true;
+  chips.style.display = 'none';
+}
+function unlockUI() {
+  isStreaming = false;
+  sendBtn.disabled = false;
+  input.disabled   = false;
+  input.focus();
+  autoGrow();
+}
+
+// ── Send message ──────────────────────────────────────────────────────────
+async function send(overrideText) {
+  const text = (overrideText || input.value).trim();
+  if (!text || isStreaming) return;
+
+  if (!overrideText) {
+    input.value = '';
+    autoGrow();
+  }
+
+  addUser(text);
+  lockUI();
+  showTyping();
+
+  let bubble  = null;
+  let rawText = '';   // accumulate for markdown re-render
+
+  try {
+    const res = await fetch('/chat/stream', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ question: text, session_id: sessionId }),
+    });
+
+    if (!res.ok) throw new Error(`Server error ${res.status}`);
+
+    const reader  = res.body.getReader();
+    const decoder = new TextDecoder();
+    let   buf     = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buf += decoder.decode(value, { stream: true });
+      const lines = buf.split('\n');
+      buf = lines.pop();
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        let evt;
+        try { evt = JSON.parse(line.slice(6)); } catch { continue; }
+
+        if (evt.type === 'token') {
+          if (!bubble) {
+            hideTyping();
+            bubble = streamBubble();
+          }
+          rawText += evt.content;
+          bubble.innerHTML = renderMarkdown(rawText);
+          scrollBottom();
+
+        } else if (evt.type === 'done') {
+          if (evt.session_id) {
+            sessionId = evt.session_id;
+            localStorage.setItem(SESSION_KEY, sessionId);
+          }
+          maybeEnableEmail();
+
+        } else if (evt.type === 'error') {
+          hideTyping();
+          if (!bubble) {
+            addBot(
+              'I\'m having trouble connecting right now. Please check that a valid Groq API key is configured, or try again in a moment.',
+              true
+            );
+          }
+          console.error('Chat error event:', evt.message);
+          bubble = null;   // mark as handled
+        }
+      }
+    }
+
+  } catch (err) {
+    hideTyping();
+    if (!bubble) {
+      addBot('Connection failed. Please make sure the server is running and try again.', true);
+    }
+    console.error('Fetch error:', err);
+  } finally {
+    hideTyping();
+    unlockUI();
+    if (!isOpen && bubble) incUnread();
+    if (!firstResponseDone && bubble) {
+      firstResponseDone = true;
+      showContactCard();
+    }
+  }
+}
+
+// ── Contact info card ────────────────────────────────────────────────────
+function showContactCard() {
+  if (contactCardShown) return;
+  contactCardShown = true;
+
+  const row = document.createElement('div');
+  row.className = 'mrow bot';
+  row.id = 'cc-row';
+
+  const av = document.createElement('div');
+  av.className = 'bav'; av.textContent = 'A';
+
+  const card = document.createElement('div');
+  card.className = 'contact-card';
+  card.innerHTML =
+    '<div class="cc-title">Stay in touch <span class="cc-opt">(optional)</span></div>' +
+    '<div class="cc-sub">Leave your details and we\'ll follow up with more info or a quote.</div>' +
+    '<input class="ci-field" id="ci-name"  type="text"  placeholder="Your name" />' +
+    '<input class="ci-field" id="ci-email" type="email" placeholder="Email address" />' +
+    '<input class="ci-field" id="ci-phone" type="tel"   placeholder="Phone number" />' +
+    '<div class="ci-actions">' +
+    '  <button class="ci-save-btn" onclick="saveContactInfo()">Save</button>' +
+    '  <button class="ci-skip-btn" onclick="skipContact()">Skip</button>' +
+    '</div>';
+
+  row.appendChild(av);
+  row.appendChild(card);
+  msgs.appendChild(row);
+  scrollBottom();
+}
+
+async function saveContactInfo() {
+  const name  = (document.getElementById('ci-name')?.value  || '').trim();
+  const email = (document.getElementById('ci-email')?.value || '').trim();
+  const phone = (document.getElementById('ci-phone')?.value || '').trim();
+
+  contactInfo = { name, email, phone };
+
+  if (sessionId && (name || email || phone)) {
+    try {
+      await fetch(`/session/${sessionId}/contact`, {
+        method:  'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ name: name || null, email: email || null, phone: phone || null }),
+      });
+    } catch {}
+  }
+
+  const card = document.querySelector('#cc-row .contact-card');
+  if (card) card.innerHTML = '<div class="cc-saved">✅ Got it! We\'ll be in touch.</div>';
+}
+
+function skipContact() {
+  const row = document.getElementById('cc-row');
+  if (row) row.remove();
+}
+
+// ── Toast helper ─────────────────────────────────────────────────────────
+let toastTimer = null;
+function showToast(msg, type = 'success', durationMs = 3500) {
+  toast.textContent = msg;
+  toast.className   = 'show ' + type;
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { toast.className = ''; }, durationMs);
+}
+
+// ── Email transcript ──────────────────────────────────────────────────────
+async function emailTranscript() {
+  if (!sessionId || msgCount === 0) return;
+
+  // If the contact card is still open, harvest + PATCH before sending email
+  const _n = (document.getElementById('ci-name')?.value  || '').trim();
+  const _e = (document.getElementById('ci-email')?.value || '').trim();
+  const _p = (document.getElementById('ci-phone')?.value || '').trim();
+  if (_n || _e || _p) {
+    contactInfo = { name: _n, email: _e, phone: _p };
+    try {
+      await fetch(`/session/${sessionId}/contact`, {
+        method:  'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ name: _n || null, email: _e || null, phone: _p || null }),
+      });
+    } catch {}
+  }
+
+  emailBtn.disabled = true;
+  showToast('📧 Sending transcript…', '', 10000);
+  try {
+    const params = new URLSearchParams();
+    if (contactInfo.name)  params.set('name',  contactInfo.name);
+    if (contactInfo.email) params.set('email', contactInfo.email);
+    if (contactInfo.phone) params.set('phone', contactInfo.phone);
+    const qs  = params.toString();
+    const url = `/session/${sessionId}/email${qs ? '?' + qs : ''}`;
+    const res = await fetch(url, { method: 'POST' });
+    if (res.ok) {
+      const data = await res.json();
+      showToast(`✅ Transcript sent! (${data.exchanges} exchange${data.exchanges !== 1 ? 's' : ''})`, 'success');
+    } else {
+      const err = await res.json().catch(() => ({}));
+      showToast('❌ ' + (err.detail || 'Failed to send email.'), 'error');
+      emailBtn.disabled = false;
+    }
+  } catch {
+    showToast('❌ Connection error. Please try again.', 'error');
+    emailBtn.disabled = false;
+  }
+}
+
+// Enable email button once the first message is exchanged
+function maybeEnableEmail() {
+  if (msgCount > 0) emailBtn.disabled = false;
+}
+
+// ── Events ────────────────────────────────────────────────────────────────
+document.getElementById('cw-btn').addEventListener('click', toggle);
+document.getElementById('cw-close').addEventListener('click', toggle);
+sendBtn.addEventListener('click', () => send());
+emailBtn.addEventListener('click', emailTranscript);
+
+input.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+});
+input.addEventListener('input', autoGrow);
+
+// Suggestion chips
+document.querySelectorAll('.chip').forEach(chip => {
+  chip.addEventListener('click', () => send(chip.dataset.q));
+});
+
+// Send transcript automatically when user closes or leaves the page
+window.addEventListener('beforeunload', () => {
+  if (!sessionId || msgCount === 0) return;
+  // Harvest form fields if the card is still open
+  const n = (document.getElementById('ci-name')?.value  || '').trim();
+  const e = (document.getElementById('ci-email')?.value || '').trim();
+  const p = (document.getElementById('ci-phone')?.value || '').trim();
+  if (n || e || p) contactInfo = { name: n, email: e, phone: p };
+
+  const params = new URLSearchParams();
+  if (contactInfo.name)  params.set('name',  contactInfo.name);
+  if (contactInfo.email) params.set('email', contactInfo.email);
+  if (contactInfo.phone) params.set('phone', contactInfo.phone);
+  const qs = params.toString();
+  navigator.sendBeacon(`/session/${sessionId}/email${qs ? '?' + qs : ''}`);
+});
+</script>
+</body>
+</html>

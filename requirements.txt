@@ -1,0 +1,39 @@
+# Astro Power Cables Chatbot — dependencies
+# Install with: pip install -r requirements.txt
+
+# Core LangChain stack
+langchain>=0.2.0
+langchain-community>=0.2.0
+langchain-core>=0.2.0
+
+# LangGraph (agent/graph orchestration)
+langgraph>=0.1.0
+
+# Vector store
+faiss-cpu>=1.7.4
+
+# Embeddings + GPU detection
+langchain-huggingface>=0.1.0
+sentence-transformers>=2.3.0
+# torch is pulled in by sentence-transformers; CUDA variant auto-detected at runtime.
+# For NVIDIA GPU support install the CUDA build manually:
+#   pip install torch --index-url https://download.pytorch.org/whl/cu121
+
+# LLM backends (install both; .env controls which is used at runtime)
+gpt4all>=2.1.0           # local model (slow on CPU, used when LLM_PROVIDER=gpt4all)
+langchain-groq>=0.1.0    # Groq cloud API (fast + free, used when LLM_PROVIDER=groq)
+python-dotenv>=1.0.0     # loads .env file
+
+# FastAPI server
+fastapi>=0.111.0
+uvicorn[standard]>=0.29.0
+pydantic>=2.0.0
+aiofiles>=23.0.0           # required for FastAPI StaticFiles
+
+# Document loaders
+python-docx>=1.1.0     # .docx files
+openpyxl>=3.1.0        # .xlsx files
+
+# HTTP (for download model.py)
+requests>=2.31.0
+tqdm>=4.66.0
