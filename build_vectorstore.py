@@ -25,6 +25,7 @@ from langchain_community.vectorstores import FAISS
 from app.config import (
     CHUNK_OVERLAP,
     CHUNK_SIZE,
+    COMPUTE_DEVICE,
     DOCS_DIR,
     EMBEDDING_MODEL,
     VECTORSTORE_PATH,
@@ -110,7 +111,10 @@ def load_csv(directory: str) -> list[Document]:
                     if any(cell.strip() for cell in row)
                 ]
             if rows:
-                cable_name = Path(path).stem
+                # Use the parent folder name (e.g. "EAXT") to match the xlsx
+                # convention, rather than the full file stem which would carry
+                # the " ELECTRICAL/MECHANICAL PROPERTIES" suffix.
+                cable_name = Path(path).parent.name
                 text       = f"Cable Type: {cable_name}\n" + "\n".join(rows)
                 docs.append(Document(
                     page_content=text,
@@ -157,10 +161,10 @@ def build() -> None:
     chunks = splitter.split_documents(all_docs)
     print(f"Total chunks        : {len(chunks)}")
 
-    print("\nBuilding FAISS index (may take a minute)...")
+    print(f"\nBuilding FAISS index on {COMPUTE_DEVICE.upper()} (may take a minute)...")
     embedding = HuggingFaceEmbeddings(
         model_name=EMBEDDING_MODEL,
-        model_kwargs={"device": "cpu"},
+        model_kwargs={"device": COMPUTE_DEVICE},
         encode_kwargs={"normalize_embeddings": True},
     )
     db = FAISS.from_documents(chunks, embedding)

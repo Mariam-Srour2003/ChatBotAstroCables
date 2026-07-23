@@ -145,9 +145,11 @@ _SIZE_RE = re.compile(
 
 # Known cable families ordered longest-first so "NYA SOLID" beats "NYA"
 _CABLE_FAMILIES = [
+    "HARD DRAWN BS 7884", "HARD DRAWN DIN 48 201",
     "NYA SOLID", "NYA", "NYAF", "NYY", "NYM SOLID", "NYM",
     "N2XY", "NYBY", "N2XH", "N2XRY", "N2XBY", "NYZ", "NYRY",
-    "NYMHY", "NYLHY", "H07Z", "PV",
+    "NYMHY", "NYLHY", "H07Z", "AL-XLPE", "EAXT",
+    "FIRE RESISTANT", "PV",
 ]
 
 def _exact_size_chunks(query: str) -> list:
@@ -163,10 +165,12 @@ def _exact_size_chunks(query: str) -> list:
     if not m:
         return []
     cores, area = m.group(1), m.group(2)
-    targets = [
-        f"of {cores}X{area} mm",
-        f"of {cores}x{area} mm",
-    ]
+    # Match the size either as txt prose ("of 1X50 mm") or as a table-row cell
+    # ("1x50 | ..." in xlsx/csv).  \b before the cores avoids matching "1x50"
+    # inside "21x50"; the trailing mm/| anchor avoids "1x5" matching "1x50".
+    size_re = re.compile(
+        rf'\b{cores}[xX]{re.escape(area)}\b\s*(?:mm|\|)'
+    )
 
     # Detect which cable family the query is asking about
     query_upper = query.upper()
@@ -175,7 +179,7 @@ def _exact_size_chunks(query: str) -> list:
     found = []
     try:
         for doc in _db.docstore._dict.values():
-            if not any(t in doc.page_content for t in targets):
+            if not size_re.search(doc.page_content):
                 continue
             if cable_family is not None:
                 src = Path(doc.metadata.get("source", "")).stem.upper()
