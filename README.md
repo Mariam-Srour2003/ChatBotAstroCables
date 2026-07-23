@@ -116,6 +116,7 @@ Copy `.env.example` to `.env` (already done in this project) and fill in your va
 | `GROQ_REWRITE_MODEL`   | Small/fast model used for follow-up question rewriting               |
 | `EMAIL_FROM`           | Gmail address the transcript is sent from                            |
 | `EMAIL_TO`             | Address that receives transcripts                                    |
+| `EMAIL_TO_2`           | Optional second recipient — leave blank to send to `EMAIL_TO` only   |
 | `EMAIL_PASS`           | Gmail **App Password** (not your regular password — see below)      |
 | `SMTP_HOST` / `SMTP_PORT` | SMTP server (defaults to Gmail: `smtp.gmail.com:587`)             |
 
@@ -222,3 +223,8 @@ pushing the repo, and setting environment variables in the Space's Settings page
   and is kept in-process only (LangGraph `MemorySaver`) — it resets on restart.
 - Inactivity auto-email fires after `INACTIVITY_MINUTES` (default 30) of no new
   messages in a session, once per session.
+- Transcripts go to `EMAIL_TO`, plus `EMAIL_TO_2` when that is filled in. Both addresses
+  receive a single message and both appear in its `To:` header, so replies keep the whole
+  thread together. Blank entries are skipped and duplicates are collapsed, so setting
+  `EMAIL_TO_2` to the same address as `EMAIL_TO` will not send twice. Adding a third
+  recipient means appending to `EMAIL_RECIPIENTS` in [app/config.py](app/config.py).

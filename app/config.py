@@ -82,7 +82,16 @@ OFF_TOPIC_RESPONSE = (
 # ── Email ─────────────────────────────────────────────────────────────────────
 EMAIL_FROM          = _os.getenv("EMAIL_FROM", "mariammsrourr2020@gmail.com")
 EMAIL_TO            = _os.getenv("EMAIL_TO",   "mariammsrourr2020@gmail.com")
+# Optional second recipient. Leave blank to send to EMAIL_TO only; fill it in
+# and transcripts go to both addresses.
+EMAIL_TO_2          = _os.getenv("EMAIL_TO_2", "").strip()
 EMAIL_PASS          = _os.getenv("EMAIL_PASS", "")
+
+# Every address a transcript goes to, blanks dropped and duplicates removed
+# so setting EMAIL_TO_2 to the same address as EMAIL_TO cannot double-send.
+EMAIL_RECIPIENTS    = list(dict.fromkeys(
+    a for a in (EMAIL_TO.strip(), EMAIL_TO_2) if a
+))
 SMTP_HOST           = _os.getenv("SMTP_HOST",  "smtp.gmail.com")
 SMTP_PORT           = int(_os.getenv("SMTP_PORT", "587"))
 INACTIVITY_MINUTES  = 30   # auto-email session after this many minutes of silence

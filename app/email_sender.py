@@ -8,7 +8,9 @@ from datetime import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-from app.config import EMAIL_FROM, EMAIL_PASS, EMAIL_TO, SMTP_HOST, SMTP_PORT
+from app.config import (
+    EMAIL_FROM, EMAIL_PASS, EMAIL_RECIPIENTS, SMTP_HOST, SMTP_PORT,
+)
 
 
 # ── Safe text → HTML (email-client-safe, no <p> tags) ────────────────────────
@@ -277,18 +279,28 @@ def send_transcript(history: list[dict], session_id: str,
                     contact: dict | None = None) -> None:
     """
     Build and send the chat transcript as an HTML email.
+
+    Goes to every address in EMAIL_RECIPIENTS (EMAIL_TO, plus EMAIL_TO_2 when
+    that is filled in) as a single message, so recipients can see each other
+    in the To: header and replies keep the whole thread together.
+
     contact: optional dict with keys 'name', 'email', 'phone'.
     Raises on SMTP failure. Silently returns if history is empty.
     """
     if not history:
         return
+    if not EMAIL_RECIPIENTS:
+        raise RuntimeError(
+            "No transcript recipients configured - set EMAIL_TO (and "
+            "optionally EMAIL_TO_2) in .env"
+        )
 
     contact = contact or {}
     msg = MIMEMultipart("alternative")
     date_str = datetime.now().strftime("%b %d, %Y")
     msg["Subject"] = f"Astro Power Cables — Chat Transcript ({date_str})"
     msg["From"]    = f"Astro Power Cables <{EMAIL_FROM}>"
-    msg["To"]      = EMAIL_TO
+    msg["To"]      = ", ".join(EMAIL_RECIPIENTS)
 
     msg.attach(MIMEText(_build_html(history, session_id, contact), "html", "utf-8"))
 
@@ -296,4 +308,4 @@ def send_transcript(history: list[dict], session_id: str,
         smtp.ehlo()
         smtp.starttls()
         smtp.login(EMAIL_FROM, EMAIL_PASS)
-        smtp.sendmail(EMAIL_FROM, [EMAIL_TO], msg.as_string())
+        smtp.sendmail(EMAIL_FROM, EMAIL_RECIPIENTS, msg.as_string())
