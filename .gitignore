@@ -1,5 +1,7 @@
 venv/
 .env
+.env.backup
+.env.*.backup
 vectorstore/
 __pycache__/
 *.pyc

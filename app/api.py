@@ -9,13 +9,16 @@ Endpoints:
     GET  /health                  → liveness probe
     DELETE /session/{id}          → clear session history
 
+    /webhook/whatsapp             → WhatsApp channel (see app/whatsapp.py)
+
+Both channels share app/engine.py and app/sessions.py, so the website widget
+and WhatsApp give the same answers and both get transcript emails.
+
 Start:
     uvicorn app.api:app --host 0.0.0.0 --port 8000 --reload
 """
 import asyncio
 import json
-import string
-import time
 import uuid
 from contextlib import asynccontextmanager
 from typing import Optional
@@ -27,53 +30,18 @@ from fastapi.staticfiles import StaticFiles
 from langchain_core.messages import HumanMessage
 from pydantic import BaseModel
 
-from app.config import (
-    GREETING_MAX_WORDS, GREETING_RESPONSE, GREETING_WORDS,
-    INACTIVITY_MINUTES, OFF_TOPIC_RESPONSE, SALES_PROMPT,
-)
-from app.graph import app_graph, retrieve_context, rewrite_query, stream_llm
-
-# ── Session stores ────────────────────────────────────────────────────────────
-
-_active_sessions:    set[str]              = set()
-_stream_histories:   dict[str, list[dict]] = {}
-_session_last_active: dict[str, float]     = {}   # session_id → unix timestamp
-_session_emailed:    set[str]              = set() # sessions already auto-emailed
-_session_contacts:   dict[str, dict]       = {}   # session_id → contact info dict
-
-MAX_HISTORY         = 20
-_INACTIVITY_SECS    = INACTIVITY_MINUTES * 60
-
-# ── Inactivity monitor ────────────────────────────────────────────────────────
-
-async def _inactivity_monitor() -> None:
-    """Background task: auto-emails sessions idle for INACTIVITY_MINUTES."""
-    from app.email_sender import send_transcript
-    while True:
-        await asyncio.sleep(60)
-        now = time.time()
-        for sid, last_t in list(_session_last_active.items()):
-            if sid in _session_emailed:
-                continue
-            if now - last_t < _INACTIVITY_SECS:
-                continue
-            history = _stream_histories.get(sid, [])
-            if len(history) < 2:
-                continue
-            contact = _session_contacts.get(sid, {})
-            loop = asyncio.get_event_loop()
-            try:
-                await loop.run_in_executor(None, send_transcript, list(history), sid, contact)
-                _session_emailed.add(sid)
-                print(f"[email] Auto-sent transcript for session {sid[:8]}…")
-            except Exception as exc:
-                print(f"[email] Auto-send failed for {sid[:8]}: {exc}")
+from app import sessions
+from app.config import OFF_TOPIC_RESPONSE, WHATSAPP_ENABLED
+from app.engine import STATIC, prepare
+from app.graph import app_graph, stream_llm
+from app.whatsapp import router as whatsapp_router
 
 # ── Lifespan ──────────────────────────────────────────────────────────────────
 
 @asynccontextmanager
 async def _lifespan(app: FastAPI):
-    task = asyncio.create_task(_inactivity_monitor())
+    task = asyncio.create_task(sessions.inactivity_monitor())
+    print(f"WhatsApp channel: {'ENABLED' if WHATSAPP_ENABLED else 'disabled (no credentials)'}")
     yield
     task.cancel()
     try:
@@ -94,6 +62,8 @@ app.add_middleware(
 )
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+app.include_router(whatsapp_router)
 
 # ── Schemas ───────────────────────────────────────────────────────────────────
 
@@ -150,7 +120,7 @@ async def chat(req: ChatRequest):
         raise HTTPException(status_code=400, detail="Question is empty.")
 
     session_id = req.session_id or str(uuid.uuid4())
-    _active_sessions.add(session_id)
+    sessions.active.add(session_id)
     config = {"configurable": {"thread_id": session_id}}
 
     try:
@@ -176,36 +146,23 @@ async def chat_stream(req: ChatRequest):
         raise HTTPException(status_code=400, detail="Question is empty.")
 
     session_id = req.session_id or str(uuid.uuid4())
-    history    = _stream_histories.setdefault(session_id, [])
     question   = req.question.strip()
+    history    = sessions.touch(session_id, channel="web")
 
-    # Track activity; new message → allow re-email if conversation continues
-    _session_last_active[session_id] = time.time()
-    _session_emailed.discard(session_id)
+    # ── Decide how to answer (shared with WhatsApp; both calls are blocking) ─
+    loop = asyncio.get_event_loop()
+    kind, payload = await loop.run_in_executor(None, prepare, question, list(history))
 
-    # ── Greeting detection ──────────────────────────────────────────────────
-    words = {w.strip(string.punctuation) for w in question.lower().split()}
-    if words & GREETING_WORDS and len(words) <= GREETING_MAX_WORDS:
-        async def _greet():
-            yield _sse({"type": "token", "content": GREETING_RESPONSE})
+    # Greetings and off-topic questions have a canned answer — send it as one
+    # SSE token so the browser sees the same event shape either way.
+    if kind is STATIC:
+        async def _static():
+            yield _sse({"type": "token", "content": payload})
             yield _sse({"type": "done",  "session_id": session_id})
-        _append_history(history, question, GREETING_RESPONSE)
-        return StreamingResponse(_greet(), media_type="text/event-stream", headers=_SSE_HEADERS)
+        sessions.append(history, question, payload)
+        return StreamingResponse(_static(), media_type="text/event-stream", headers=_SSE_HEADERS)
 
-    # ── Query rewriting & retrieval (run in thread — both are synchronous) ──
-    loop         = asyncio.get_event_loop()
-    standalone_q = await loop.run_in_executor(None, rewrite_query, question, history)
-    context, route, sources = await loop.run_in_executor(None, retrieve_context, standalone_q)
-
-    if route == "off_topic":
-        async def _off():
-            yield _sse({"type": "token", "content": OFF_TOPIC_RESPONSE})
-            yield _sse({"type": "done",  "session_id": session_id})
-        _append_history(history, question, OFF_TOPIC_RESPONSE)
-        return StreamingResponse(_off(), media_type="text/event-stream", headers=_SSE_HEADERS)
-
-    # ── Build prompt ────────────────────────────────────────────────────────
-    prompt = SALES_PROMPT.format(context=context, question=question)
+    prompt = payload
 
     # ── Stream ──────────────────────────────────────────────────────────────
     async def _generate():
@@ -243,7 +200,7 @@ async def chat_stream(req: ChatRequest):
         finally:
             answer = full.strip()
             if answer:
-                _append_history(history, question, answer)
+                sessions.append(history, question, answer)
             yield _sse({"type": "done", "session_id": session_id})
 
     return StreamingResponse(_generate(), media_type="text/event-stream", headers=_SSE_HEADERS)
@@ -254,7 +211,7 @@ async def save_contact(session_id: str, req: ContactRequest):
     """Store contact info for a session (used by auto-send and manual email)."""
     contact = {k: v for k, v in {"name": req.name, "email": req.email,
                                    "phone": req.phone}.items() if v}
-    _session_contacts[session_id] = contact
+    sessions.set_contact(session_id, contact)
     return {"saved": True}
 
 
@@ -267,19 +224,16 @@ async def email_transcript(
 ):
     """Send the full chat transcript (+ optional contact info) as an HTML email."""
     from app.email_sender import send_transcript
-    history = _stream_histories.get(session_id, [])
+    history = sessions.histories.get(session_id, [])
     if len(history) < 2:
         raise HTTPException(status_code=400, detail="No conversation to send yet.")
 
     # Merge stored contact with anything passed as query params
-    contact = dict(_session_contacts.get(session_id, {}))
-    if name:  contact["name"]  = name
-    if email: contact["email"] = email
-    if phone: contact["phone"] = phone
+    contact = sessions.merge_contact(session_id, name=name, email=email, phone=phone)
     loop = asyncio.get_event_loop()
     try:
         await loop.run_in_executor(None, send_transcript, list(history), session_id, contact)
-        _session_emailed.add(session_id)
+        sessions.emailed.add(session_id)
         return {"sent": True, "exchanges": len(history) // 2}
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Email failed: {exc}")
@@ -287,25 +241,13 @@ async def email_transcript(
 
 @app.delete("/session/{session_id}")
 def clear_session(session_id: str):
-    _active_sessions.discard(session_id)
-    _stream_histories.pop(session_id, None)
-    _session_last_active.pop(session_id, None)
-    _session_emailed.discard(session_id)
-    _session_contacts.pop(session_id, None)
+    sessions.clear(session_id)
     return {"cleared": True}
 
 
 @app.get("/sessions")
 def list_sessions():
-    return {"active_sessions": list(_active_sessions)}
-
-# ── Internal ──────────────────────────────────────────────────────────────────
-
-def _append_history(history: list, question: str, answer: str) -> None:
-    history.append({"role": "user",      "content": question})
-    history.append({"role": "assistant", "content": answer})
-    if len(history) > MAX_HISTORY:
-        del history[:2]
+    return {"active_sessions": list(sessions.active)}
 
 # ── Dev runner ────────────────────────────────────────────────────────────────
 

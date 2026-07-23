@@ -96,6 +96,42 @@ SMTP_HOST           = _os.getenv("SMTP_HOST",  "smtp.gmail.com")
 SMTP_PORT           = int(_os.getenv("SMTP_PORT", "587"))
 INACTIVITY_MINUTES  = 30   # auto-email session after this many minutes of silence
 
+# ── WhatsApp (Meta Cloud API) ─────────────────────────────────────────────────
+# Leave WHATSAPP_TOKEN blank and the webhook stays dormant; the website is
+# unaffected. See README "WhatsApp channel" for how to fill these in.
+
+WHATSAPP_TOKEN           = _os.getenv("WHATSAPP_TOKEN", "").strip()
+WHATSAPP_PHONE_NUMBER_ID = _os.getenv("WHATSAPP_PHONE_NUMBER_ID", "").strip()
+# WhatsApp Business Account id (API Setup page). Only needed for
+# `whatsapp_test.py subscribe`, which links this WABA to your app so Meta
+# actually delivers webhooks here.
+WHATSAPP_WABA_ID         = _os.getenv("WHATSAPP_WABA_ID", "").strip()
+# Any string you invent; you type the same one into the Meta webhook setup form.
+WHATSAPP_VERIFY_TOKEN    = _os.getenv("WHATSAPP_VERIFY_TOKEN", "").strip()
+# App Secret from Meta → App settings → Basic. Used to prove callbacks are
+# really from Meta. Blank disables the check — fine locally, not in production.
+WHATSAPP_APP_SECRET      = _os.getenv("WHATSAPP_APP_SECRET", "").strip()
+WHATSAPP_API_VERSION     = _os.getenv("WHATSAPP_API_VERSION", "v22.0")
+WHATSAPP_GRAPH_URL       = f"https://graph.facebook.com/{WHATSAPP_API_VERSION}"
+
+WHATSAPP_ENABLED         = bool(WHATSAPP_TOKEN and WHATSAPP_PHONE_NUMBER_ID)
+
+# WhatsApp hard-limits a text body to 4096 characters; split below that.
+WHATSAPP_MAX_CHARS       = 3800
+
+WHATSAPP_UNSUPPORTED_RESPONSE = (
+    "Thanks for your message! I can only read text right now — "
+    "please type your question about our cables and I'll help straight away."
+)
+
+WHATSAPP_ERROR_RESPONSE = (
+    "Sorry, something went wrong on our side. Please try again in a moment, "
+    "or call us on +961 1 271 471."
+)
+
+# Sending any of these clears the conversation history for that number.
+WHATSAPP_RESET_WORDS = {"reset", "restart", "clear", "new chat"}
+
 # ── Prompts ───────────────────────────────────────────────────────────────────
 
 # Used to make a follow-up question self-contained before retrieval

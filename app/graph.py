@@ -1,9 +1,10 @@
 """
 app/graph.py — LangGraph chatbot pipeline.
 
-Exported for use by api.py streaming endpoint:
+Exported for use by app/engine.py (shared by the website and WhatsApp):
     rewrite_query(question, history)  → standalone question
     retrieve_context(query)           → (context, route, sources)
+    invoke_llm(prompt)                → full answer, blocking
     stream_llm(prompt)                → async token generator
     app_graph                         → compiled LangGraph (non-streaming /chat)
 """
@@ -252,7 +253,7 @@ def _groq_error_label(exc: Exception) -> str:
     return type(exc).__name__
 
 
-def _invoke_llm(prompt: str) -> str:
+def invoke_llm(prompt: str) -> str:
     """Synchronous LLM call with Groq → local fallback on any error."""
     if LLM_PROVIDER == "groq" and _groq_client:
         try:
@@ -336,7 +337,7 @@ def answer_node(state: ChatState) -> ChatState:
     prompt  = SALES_PROMPT.format(context=context, question=query)
 
     t0               = time.perf_counter()
-    raw              = _invoke_llm(prompt)
+    raw              = invoke_llm(prompt)
     timing["llm_ms"] = (time.perf_counter() - t0) * 1000
 
     answer = OFF_TOPIC_RESPONSE if "OFF_TOPIC" in raw else raw
